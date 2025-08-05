@@ -1,0 +1,62 @@
+<div class="transactions-container">
+    <div class="header-bar">
+        <input type="text" [(ngModel)]="searchText" placeholder="Buscar por número de cuenta" />
+        <button class="btn-secondary" (click)="applySearch()">Buscar</button>
+        <button class="btn-primary" (click)="openTransactionModal()">+ Nueva Transacción</button>
+    </div>
+
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Saldo</th>
+                    <th>N° Cuenta</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let tx of filteredTransactions">
+                    <td>{{ tx.id }}</td>
+                    <td>{{ tx.date }}</td>
+                    <td>{{ tx.typeMovement }}</td>
+                    <td>{{ tx.value }}</td>
+                    <td>{{ tx.sald }}</td>
+                    <td>{{ tx.accountNumberAccount }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showTransactionModal" (click)="closeTransactionModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <h2>Nueva Transacción</h2>
+        <form (ngSubmit)="saveTransaction()" class="modal-form">
+            <label for="date">Fecha</label>
+            <input type="date" id="date" [(ngModel)]="newTransaction.date" name="date" required />
+
+            <label for="type">Tipo Movimiento</label>
+            <select id="type" [(ngModel)]="newTransaction.typeMovement" name="typeMovement" required>
+                <option value="Depósito">Depósito</option>
+                <option value="Retiro">Retiro</option>
+            </select>
+
+            <label for="value">Valor</label>
+            <input type="number" id="value" [(ngModel)]="newTransaction.value" name="value" required />
+
+            <label for="sald">Saldo</label>
+            <input type="number" id="sald" [(ngModel)]="newTransaction.sald" name="sald" required />
+
+            <label for="account">Número de Cuenta</label>
+            <input type="text" id="account" [(ngModel)]="newTransaction.accountNumberAccount" name="accountNumberAccount" required />
+
+            <div class="modal-buttons">
+                <button type="submit" class="btn-primary">Guardar</button>
+                <button type="button" class="btn-danger" (click)="closeTransactionModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>

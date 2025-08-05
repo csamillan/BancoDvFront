@@ -1,0 +1,105 @@
+<div class="accounts-container">
+    <div class="header-bar">
+        <input type="text" placeholder="Buscar por número de cuenta" [(ngModel)]="searchAccount" />
+        <button class="btn-primary" (click)="openAccountModal()">+ Nueva Cuenta</button>
+    </div>
+
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Número de Cuenta</th>
+                    <th>Tipo</th>
+                    <th>Saldo Inicial</th>
+                    <th>Estado</th>
+                    <th>DNI Cliente</th>
+                    <th>Nombre Cliente</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let account of filteredAccounts()">
+                    <td>{{ account.numberAccount }}</td>
+                    <td>{{ account.accountType }}</td>
+                    <td>{{ account.initialBalance }}</td>
+                    <td>{{ account.status }}</td>
+                    <td>{{ account.clientIdentityDocument }}</td>
+                    <td>{{ account.clientName }}</td>
+                    <td>
+                        <button class="btn-action" (click)="editAccount(account)">Editar</button>
+                        <span style="margin: 0 6px;"></span>
+                        <button class="btn-danger small" (click)="deleteAccount(account)">Eliminar</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Fondo del modal que cierra al hacer clic fuera -->
+<div class="modal-backdrop" *ngIf="showAccountModal" (click)="closeAccountModal()">
+    <!-- Modal centrado que evita el cierre si haces clic dentro -->
+    <div class="modal" (click)="$event.stopPropagation()">
+        <h2>{{ isEditMode ? 'Editar Cuenta' : 'Nueva Cuenta' }}</h2>
+
+        <form (ngSubmit)="saveAccount()" class="modal-form">
+            <label for="numberAccount">Número de Cuenta</label>
+            <input type="text" id="numberAccount" [(ngModel)]="currentAccount.numberAccount" name="numberAccount"
+                required />
+
+            <label for="accountType">Tipo de Cuenta</label>
+            <select id="accountType" [(ngModel)]="currentAccount.accountType" name="accountType" required>
+                <option value="" disabled selected>Seleccione tipo</option>
+                <option value="Ahorros">Ahorros</option>
+                <option value="Corriente">Corriente</option>
+            </select>
+
+            <label for="initialBalance">Saldo Inicial</label>
+            <input type="number" id="initialBalance" [(ngModel)]="currentAccount.initialBalance" name="initialBalance"
+                required />
+
+            <label for="status">Estado</label>
+            <input type="text" id="status" [(ngModel)]="currentAccount.status" name="status" required />
+
+            <label>Cliente</label>
+            <div class="client-select">
+                <input type="text" [value]="selectedClient?.name || ''" placeholder="Cliente seleccionado" disabled />
+                <button type="button" class="btn-secondary" (click)="toggleClientSearch()">Buscar Cliente</button>
+            </div>
+
+            <div class="client-panel" *ngIf="showClientPanel">
+                <div class="client-panel-header">
+                    <h3>Seleccionar Cliente</h3>
+                    <button class="close-btn" (click)="toggleClientSearch()">❌</button>
+                </div>
+
+                <input type="text" placeholder="Buscar por nombre o DNI" [(ngModel)]="clientSearchText" />
+
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>DNI</th>
+                            <th>Seleccionar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let client of filteredClients()">
+                            <td>{{ client.name }}</td>
+                            <td>{{ client.identityDocument }}</td>
+                            <td>
+                                <button class="btn-primary small" type="button"
+                                    (click)="selectClient(client)">Seleccionar</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="submit" class="btn-primary">Guardar</button>
+                <button type="button" class="btn-danger" (click)="closeAccountModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,24 @@
+<div class="layout-container">
+    <header class="header">
+        <img src="logo.jpeg" alt="Logo Banco" class="logo" />
+        <div class="title-container">
+            <h1>Banco</h1>
+        </div>
+    </header>
+    <div class="content-wrapper">
+        <nav class="sidebar">
+            <ul>
+                <li> <a [routerLink]="['clients']">Clientes</a></li>
+                <li><a [routerLink]="['accounts']">Cuentas</a></li>
+                <li><a [routerLink]="['transactions']">Transacciones</a></li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <router-outlet />
+        </main>
+    </div>
+    <footer class="footer">
+        <p>© 2025 Banco</p>
+    </footer>
+</div>
