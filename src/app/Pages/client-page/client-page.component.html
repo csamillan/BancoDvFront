@@ -9,29 +9,30 @@
       <thead>
         <tr>
           <th>DNI</th>
-          <th>Password</th>
-          <th>Estado</th>
           <th>Nombre</th>
           <th>Género</th>
           <th>Edad</th>
           <th>Dirección</th>
           <th>Teléfono</th>
+          <th>Password</th>
+          <th>Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let client of filteredClients()">
-          <td>{{ client.identityDocument }}</td>
-          <td>{{ client.password }}</td>
-          <td>{{ client.status }}</td>
-          <td>{{ client.name }}</td>
-          <td>{{ client.gender }}</td>
-          <td>{{ client.age }}</td>
-          <td>{{ client.address }}</td>
-          <td>{{ client.phone }}</td>
+        <tr *ngFor="let clients of filteredClients()">
+          <td>{{ clients.identityDocument }}</td>
+          <td>{{ clients.name }}</td>
+          <td>{{ clients.gender == 1 ? "Masculino" : (clients.gender == 2 ? "Femenino" : "Otros") }}</td>
+          <td>{{ clients.age }}</td>
+          <td>{{ clients.address }}</td>
+          <td>{{ clients.phone }}</td>
+          <td>{{ clients.password }}</td>
+          <td>{{ clients.status === true ? "Activo" : "Desactivado"}}</td>
           <td style="white-space: nowrap;">
-            <button class="btn-secondary" (click)="editClient(client)">Editar</button>
-            <button class="btn-danger" (click)="deleteClient(client)">Eliminar</button>
+            <button class="btn-secondary" (click)="showModlClient(clients)">Editar</button>
+            <span style="margin: 0 6px;"></span>
+            <button class="btn-danger" (click)="deleteClient(clients.identityDocument)">Eliminar</button>
           </td>
         </tr>
       </tbody>
@@ -45,35 +46,49 @@
     <h2>{{ isEditMode ? 'Editar Cliente' : 'Nuevo Cliente' }}</h2>
     <button class="close-btn" (click)="closeModal()">×</button>
   </div>
-  <form class="modal-form" (ngSubmit)="saveClient()">
-    <label for="dni">DNI</label>
-    <input type="text" id="dni" [(ngModel)]="currentClient.identityDocument" name="dni" required />
+  <form class="modal-form" [formGroup]="ClientForm">
+    <label for="dni">Documento de Identidad</label>
+    <input type="text" id="dni" formControlName="identityDocument" [readonly]="isEditMode" />
+    <div *ngIf="ClientForm.get('identityDocument')?.invalid && ClientForm.get('identityDocument')?.touched" class="error">
+      El DNI solo puede contener numeros</div>
 
     <label for="password">Password</label>
-    <input type="password" id="password" [(ngModel)]="currentClient.password" name="password" required />
+    <input id="password" formControlName="password" />
+    <div *ngIf="ClientForm.get('password')?.invalid && ClientForm.get('password')?.touched" class="error">
+      Maximo 25 caracteres</div>
 
     <label for="name">Nombre</label>
-    <input type="text" id="name" [(ngModel)]="currentClient.name" name="name" required />
+    <input type="text" id="name" formControlName="name" />
+    <div *ngIf="ClientForm.get('name')?.invalid && ClientForm.get('name')?.touched" class="error">
+      El nombre solo puede contener letras</div>
 
     <label for="gender">Género</label>
-    <select id="gender" [(ngModel)]="currentClient.gender" name="gender" required>
-      <option value="" disabled selected>Seleccione género</option>
-      <option value="1">Masculino</option>
-      <option value="2">Femenino</option>
-      <option value="3">Otros</option>
+    <select id="gender" formControlName="gender">
+      <option value="" disabled>Seleccione género</option>
+      <option value=1>Masculino</option>
+      <option value=2>Femenino</option>
+      <option value=3>Otros</option>
     </select>
 
     <label for="age">Edad</label>
-    <input type="number" id="age" [(ngModel)]="currentClient.age" name="age" required />
+    <input type="number" id="age" formControlName="age" />
+    <div *ngIf="ClientForm.get('age')?.invalid && ClientForm.get('age')?.touched" class="error">
+      Edad entre 18 a 120 años</div>
 
     <label for="address">Dirección</label>
-    <input type="text" id="address" [(ngModel)]="currentClient.address" name="address" required />
+    <input type="text" id="address" formControlName="address" />
+    <div *ngIf="ClientForm.get('address')?.invalid && ClientForm.get('address')?.touched" class="error">
+      Maximo 150 caracteres</div>
 
     <label for="phone">Teléfono</label>
-    <input type="text" id="phone" [(ngModel)]="currentClient.phone" name="phone" required />
+    <input type="text" id="phone" formControlName="phone" />
+    <div *ngIf="ClientForm.get('phone')?.invalid && ClientForm.get('phone')?.touched" class="error">
+      Solo Numeros, Maximo 12 digitos</div>
 
     <div class="modal-buttons">
-      <button class="btn-primary" type="submit">Guardar</button>
+      <button class="btn-primary" type="submit" (click)="isEditMode ? updateClient() : saveClient()">
+        {{ isEditMode ? 'Editar' : 'Guardar' }}
+      </button>
       <button class="btn-danger" type="button" (click)="closeModal()">Cancelar</button>
     </div>
   </form>

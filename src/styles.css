@@ -10,3 +10,35 @@ html, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+::ng-deep .p-toast {
+  z-index: 9999;
+  top: 1rem;
+  right: 1rem;
+  width: 300px;
+}
+
+/* Estilo base del mensaje */
+::ng-deep .p-toast .p-toast-message {
+  background: #007ad9;
+  color: white;
+  border-left: 5px solid #005bb5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Estilo para mensajes de tipo info */
+::ng-deep .p-toast .p-toast-message-info {
+  background: #2196f3;
+  border-color: #1976d2;
+}
+
+/* Estilo para mensajes de éxito */
+::ng-deep .p-toast .p-toast-message-success {
+  background: #4caf50;
+  border-color: #388e3c;
+}
+
+/* Estilo para mensajes de error */
+::ng-deep .p-toast .p-toast-message-error {
+  background: #f44336;
+  border-color: #d32f2f;
+}

@@ -1,0 +1,12 @@
+<div class="alert-container">
+    @for (alert of alertService.alerts(); track $index) {
+        <div [className]="'alert-item '+ alert.type">
+            <span>{{ alert.message }}</span>
+            <span
+                class="alert-close"
+                (click)="alertService.removeAlert(alert)">
+                ✕
+            </span>
+        </div>
+    }
+</div>

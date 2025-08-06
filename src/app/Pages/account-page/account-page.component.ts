@@ -1,61 +1,62 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Account, Client } from '../../Interfaces/generic.interface';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Account, SaveAccount } from '../../Interfaces/generic.interface';
+import { AccountService } from '../../Services/Accounts/account.service';
+import { AlertService } from '../../Services/Alerts/alert.service';
+import { ClientService } from '../../Services/Clients/client.service';
 
 @Component({
   selector: 'app-account-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './account-page.component.html',
   styleUrl: './account-page.component.css'
 })
-export default class AccountPageComponent {
-  clients: Client[] = [
-    { id: 1, name: 'Juan Pérez', identityDocument: '12345678' },
-    { id: 2, name: 'María López', identityDocument: '87654321' },
-    { id: 3, name: 'Carlos García', identityDocument: '45678912' }
-  ];
-
-  // Mock de cuentas
-  accounts: Account[] = [
-    {
-      id: 1,
-      numberAccount: '0001',
-      accountType: 'Ahorros',
-      initialBalance: 500.0,
-      status: 'Activo',
-      clientId: 1,
-      clientIdentityDocument: '12345678',
-      clientName: 'Juan Pérez'
-    },
-    {
-      id: 2,
-      numberAccount: '0002',
-      accountType: 'Corriente',
-      initialBalance: 1000.0,
-      status: 'Inactivo',
-      clientId: 2,
-      clientIdentityDocument: '87654321',
-      clientName: 'María López'
-    }
-  ];
-
+export default class AccountPageComponent implements OnInit {
   searchAccount: string = '';
+  accounts: Account[] = [];
+  isEditMode: boolean = false;
+  accountForm: FormGroup;
+
   clientSearchText: string = '';
   showAccountModal: boolean = false;
-  showClientSelector: boolean = false;
-  isEditMode: boolean = false;
 
-  currentAccount: Partial<Account> = {};
-  selectedClient?: Client;
-
-  showClientPanel = false;
-
-  toggleClientSearch() {
-    this.showClientPanel = !this.showClientPanel;
+  constructor(
+    private fb: FormBuilder,
+    private accountService: AccountService,
+    private clientService: ClientService,
+    private cdr: ChangeDetectorRef,
+    private readonly alertService: AlertService
+  ) {
+    this.accountForm = this.fb.group({
+      numberAccount: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(12)]],
+      accountType: ['', Validators.required],
+      initialBalance: ['',[Validators.required, Validators.pattern(/^\d+(\.\d+)?$/), Validators.min(1)]],
+      clientName: ['', Validators.required],
+      IdentityDocument: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(12)]],
+    });
   }
-  // Filtra cuentas por número
+
+  ngOnInit(): void {
+    this.loadAccounts();
+  }
+
+  toggleClientSearch(identity: string) {
+    this.clientService.getClientById(identity).subscribe({
+      next: (response) => {
+        this.accountForm.patchValue({
+          clientName: response.name
+        });
+        this.alertService.success('Cliente seleccionado exitosamente');
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.alertService.error(error.message || 'Error al seleccionar el cliente');
+      }
+    });
+  }
+
   filteredAccounts(): Account[] {
     if (!this.searchAccount) return this.accounts;
     return this.accounts.filter(account =>
@@ -63,90 +64,120 @@ export default class AccountPageComponent {
     );
   }
 
-  // Abrir modal de cuenta
-  openAccountModal(): void {
-    this.resetForm();
+  showModlClient(account: any) {
     this.showAccountModal = true;
-    this.isEditMode = false;
+    this.isEditMode = true;
+
+    this.accountForm.patchValue({
+      numberAccount: account.numberAccount,
+      accountType: account.accountType,
+      initialBalance: account.initialBalance,
+      IdentityDocument: account.clientIdentityDocument,
+      clientName: account.clientName
+    });
   }
 
-  // Cerrar modal de cuenta
-  closeAccountModal(): void {
-    this.showAccountModal = false;
-    this.currentAccount = {};
-    this.selectedClient = undefined;
-  }
-
-  // Guardar cuenta nueva o actualizada
   saveAccount(): void {
-    if (!this.selectedClient || !this.currentAccount.numberAccount) return;
-
-    if (this.isEditMode && this.currentAccount.id != null) {
-      const index = this.accounts.findIndex(acc => acc.id === this.currentAccount.id);
-      if (index !== -1) {
-        this.accounts[index] = {
-          ...this.currentAccount as Account,
-          clientId: this.selectedClient.id,
-          clientIdentityDocument: this.selectedClient.identityDocument,
-          clientName: this.selectedClient.name
-        };
-      }
-    } else {
-      const newAccount: Account = {
-        id: Date.now(), // Generador rápido
-        numberAccount: this.currentAccount.numberAccount!,
-        accountType: this.currentAccount.accountType || '',
-        initialBalance: this.currentAccount.initialBalance || 0,
-        status: this.currentAccount.status || '',
-        clientId: this.selectedClient.id,
-        clientIdentityDocument: this.selectedClient.identityDocument,
-        clientName: this.selectedClient.name
-      };
-      this.accounts.push(newAccount);
+    if (this.accountForm.invalid) {
+      this.validateAllFormFields(this.accountForm);
+      this.alertService.error('Por favor, completa todos los campos requeridos.');
+      return;
     }
+    const accountData: SaveAccount = this.getSaveAccountData();
+
+    this.accountService.postCreateAccount(accountData).subscribe({
+      next: () => {
+        this.alertService.success('Cuenta guardada exitosamente');
+        this.loadAccounts();
+        this.accountForm.reset();
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.alertService.error(error.message || 'Error al guardar la cuenta');
+      }
+    });
 
     this.closeAccountModal();
   }
 
-  // Editar cuenta existente
-  editAccount(account: Account): void {
-    this.isEditMode = true;
-    this.currentAccount = { ...account };
-    this.selectedClient = this.clients.find(c => c.id === account.clientId);
-    this.showAccountModal = true;
-  }
-
-  // Eliminar cuenta
-  deleteAccount(account: Account): void {
-    if (confirm('¿Estás seguro de eliminar esta cuenta?')) {
-      this.accounts = this.accounts.filter(a => a.id !== account.id);
+  editAccount(): void {
+    if (this.accountForm.invalid) {
+      this.validateAllFormFields(this.accountForm);
+      this.alertService.error('Por favor, completa todos los campos requeridos.');
+      return;
     }
+    const accountData: SaveAccount = this.getSaveAccountData();
+
+    this.accountService.putUpdateAccount(accountData).subscribe({
+      next: () => {
+        this.alertService.success('Cuenta Actualizada exitosamente');
+        this.loadAccounts();
+        this.accountForm.reset();
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.alertService.error(error.message || 'Error al Actualizar la cuenta');
+      }
+    });
+    this.closeAccountModal();
   }
 
-  // Abrir selector de cliente
-  openClientSelector(): void {
-    this.clientSearchText = '';
-    this.showClientSelector = true;
+  deleteAccount(numberAccount: string): void {
+    this.accountService.patchDesactiveAccount(numberAccount).subscribe({
+      next: () => {
+        this.alertService.success('Cuenta Desactivada exitosamente');
+        this.loadAccounts();
+        this.accountForm.reset();
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.alertService.error(error.message || 'Error al desactivar la cuenta');
+      }
+    });
   }
 
-  // Seleccionar cliente desde modal
-  selectClient(client: Client): void {
-    this.selectedClient = client;
-    this.showClientSelector = false;
+  openAccountModal(): void {
+    this.accountForm.reset();
+    this.showAccountModal = true;
+    this.isEditMode = false;
   }
 
-  // Filtrar lista de clientes en el modal
-  filteredClients(): Client[] {
-    if (!this.clientSearchText) return this.clients;
-    const search = this.clientSearchText.toLowerCase();
-    return this.clients.filter(c =>
-      c.name.toLowerCase().includes(search) || c.identityDocument.includes(search)
-    );
+  closeAccountModal(): void {
+    this.showAccountModal = false;
   }
 
-  // Resetear formulario
-  private resetForm(): void {
-    this.currentAccount = {};
-    this.selectedClient = undefined;
+  private loadAccounts(): void {
+    this.accountService.getAccounts().subscribe({
+      next: (response) => {
+        this.accounts = response;
+        this.alertService.success('Cuentas cargadas exitosamente');
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.alertService.error(error.message || 'Error al cargar las cuentas');
+      }
+    });
+  }
+
+  private getSaveAccountData(): SaveAccount {
+    const formValue = this.accountForm.value;
+    return {
+      numberAccount: formValue.numberAccount,
+      accountType: parseInt(formValue.accountType, 10),
+      initialBalance: Number(formValue.initialBalance),
+      identityDocument: formValue.IdentityDocument,
+      status: true,
+    };
+  }
+
+  private validateAllFormFields(formGroup: FormGroup) {
+    Object.keys(formGroup.controls).forEach(field => {
+      const control = formGroup.get(field);
+      if (control instanceof FormGroup) {
+        this.validateAllFormFields(control);
+      } else {
+        control?.markAsTouched({ onlySelf: true });
+      }
+    });
   }
 }

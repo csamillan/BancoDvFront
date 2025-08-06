@@ -1,0 +1,41 @@
+<div class="clients-container">
+  <div class="header-bar">
+    <h2>Reporte de Transacciones</h2>
+  </div>
+
+  <form [formGroup]="reportForm" (ngSubmit)="generateReport()" class="filter-bar">
+    <input type="text" placeholder="Número de cuenta" formControlName="accountNumber" />
+    <input type="date" formControlName="startDate" />
+    <input type="date" formControlName="endDate" />
+    <button type="submit" class="btn-primary">Generar</button>
+  </form>
+
+  <div class="table-container" *ngIf="reportData.length > 0">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Nombre</th>
+          <th>N° Cuenta</th>
+          <th>Tipo</th>
+          <th>Saldo Inicial</th>
+          <th>Estado</th>
+          <th>Transacciones</th>
+          <th>Saldo Actual</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of reportData">
+          <td>{{ item.date | date:'dd/MM/yyyy' }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.accountNumber }}</td>
+          <td>{{ item.type }}</td>
+          <td>{{ item.initialSald | number:'1.2-2' }}</td>
+          <td>{{ item.status ? 'Activo' : 'Desactivado' }}</td>
+          <td>{{ item.transactions | number:'1.2-2' }}</td>
+          <td>{{ item.currectSald | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

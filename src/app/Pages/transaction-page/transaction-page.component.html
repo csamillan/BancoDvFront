@@ -10,21 +10,22 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>N° Cuenta</th>
                     <th>Fecha</th>
                     <th>Tipo</th>
+                    <th>Saldo Anterior</th>
                     <th>Valor</th>
-                    <th>Saldo</th>
-                    <th>N° Cuenta</th>
+
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let tx of filteredTransactions">
-                    <td>{{ tx.id }}</td>
-                    <td>{{ tx.date }}</td>
-                    <td>{{ tx.typeMovement }}</td>
-                    <td>{{ tx.value }}</td>
-                    <td>{{ tx.sald }}</td>
-                    <td>{{ tx.accountNumberAccount }}</td>
+                <tr *ngFor="let transaction of transactions">
+                    <td>{{ transaction.id }}</td>
+                    <td>{{ transaction.accountNumberAccount }}</td>
+                    <td>{{ transaction.date | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ transaction.typeMovement == 1 ? "Credito" : "Debito" }}</td>
+                    <td>{{ transaction.sald }}</td>
+                    <td>{{ transaction.typeMovement == 1 ? transaction.value : transaction.value*-1 }}</td>
                 </tr>
             </tbody>
         </table>
@@ -34,27 +35,31 @@
 <div class="modal-backdrop" *ngIf="showTransactionModal" (click)="closeTransactionModal()">
     <div class="modal" (click)="$event.stopPropagation()">
         <h2>Nueva Transacción</h2>
-        <form (ngSubmit)="saveTransaction()" class="modal-form">
+        <form [formGroup]="transactionForm" class="modal-form">
+            <label for="account">Número de Cuenta</label>
+            <input type="text" id="account" formControlName="accountNumberAccount" required />
+            <div *ngIf="transactionForm.get('accountNumberAccount')?.invalid && transactionForm.get('accountNumberAccount')?.touched"
+                class="error">
+                La cuenta solo puede contener numeros</div>
+
             <label for="date">Fecha</label>
-            <input type="date" id="date" [(ngModel)]="newTransaction.date" name="date" required />
+            <input type="date" id="date" formControlName="date" [readOnly]="true" required />
 
             <label for="type">Tipo Movimiento</label>
-            <select id="type" [(ngModel)]="newTransaction.typeMovement" name="typeMovement" required>
-                <option value="Depósito">Depósito</option>
-                <option value="Retiro">Retiro</option>
+            <select id="type" formControlName="typeMovement" required>
+                <option value="" disabled>Seleccione tipo</option>
+                <option value=1>Crédito</option>
+                <option value=2>Debito</option>
             </select>
 
             <label for="value">Valor</label>
-            <input type="number" id="value" [(ngModel)]="newTransaction.value" name="value" required />
-
-            <label for="sald">Saldo</label>
-            <input type="number" id="sald" [(ngModel)]="newTransaction.sald" name="sald" required />
-
-            <label for="account">Número de Cuenta</label>
-            <input type="text" id="account" [(ngModel)]="newTransaction.accountNumberAccount" name="accountNumberAccount" required />
+            <input type="number" id="value" formControlName="value" required />
+            <div *ngIf="transactionForm.get('value')?.invalid && transactionForm.get('value')?.touched"
+                class="error">
+                El valor debe ser mayor a 1</div>
 
             <div class="modal-buttons">
-                <button type="submit" class="btn-primary">Guardar</button>
+                <button type="submit" class="btn-primary" (click)="saveTransaction()">Guardar</button>
                 <button type="button" class="btn-danger" (click)="closeTransactionModal()">Cancelar</button>
             </div>
         </form>

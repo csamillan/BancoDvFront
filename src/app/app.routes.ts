@@ -24,6 +24,10 @@ export const routes: Routes = [
                 loadComponent: () => import('./Pages/transaction-page/transaction-page.component')
             },
             {
+                path: 'reports',
+                loadComponent: () => import('./Pages/report-page/report-page.component')
+            },
+            {
                 path: '**',
                 loadComponent: () => import('./Pages/not-found-page/not-found-page.component')
             }

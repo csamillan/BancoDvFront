@@ -1,53 +1,57 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators, ValueChangeEvent } from '@angular/forms';
+import { Transaction } from '../../Interfaces/generic.interface';
+import { TransactionService } from '../../Services/Transactions/transaction.service';
+import { AlertService } from '../../Services/Alerts/alert.service';
 
 @Component({
-  selector: 'app-transaction-page',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './transaction-page.component.html',
-  styleUrl: './transaction-page.component.css'
+    selector: 'app-transaction-page',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule],
+    templateUrl: './transaction-page.component.html',
+    styleUrl: './transaction-page.component.css'
 })
 export default class TransactionPageComponent {
-  transactions = [
-        { id: 1, date: '2025-08-01', typeMovement: 'Depósito', value: 1000, sald: 5000, accountNumberAccount: '123456' }
-    ];
-
-    filteredTransactions = [...this.transactions];
-
+    transactions: Transaction[] = [];
     searchText = '';
     showTransactionModal = false;
+    transactionForm: FormGroup;
 
-    newTransaction = {
-        id: 0,
-        date: '',
-        typeMovement: '',
-        value: 0,
-        sald: 0,
-        accountNumberAccount: ''
-    };
+    constructor(
+        private fb: FormBuilder,
+        private transactionService: TransactionService,
+        private cdr: ChangeDetectorRef,
+        private readonly alertService: AlertService
+    ) {
+        this.transactionForm = this.fb.group({
+            accountNumberAccount: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.maxLength(12)]],
+            date: [this.getToday(), Validators.required],
+            typeMovement: ['', Validators.required],
+            value: ['', [Validators.required, Validators.pattern(/^\d+(\.\d+)?$/), Validators.min(1)]]
+        });
+    }
 
     applySearch() {
         if (!this.searchText) {
-            this.filteredTransactions = [...this.transactions];
+            this.alertService.error('El campo de búsqueda está vacío.');
             return;
         }
 
-        this.filteredTransactions = this.transactions.filter(tx =>
-            tx.accountNumberAccount.includes(this.searchText)
-        );
+        this.transactionService.getListTransactionByAccount(this.searchText).subscribe({
+            next: (response) => {
+                this.transactions = response;
+                this.alertService.success('Transacciones cargadas exitosamente');
+                this.searchText = '';
+                this.cdr.markForCheck();
+            },
+            error: (error) => {
+                this.alertService.error(error.message || 'Error al cargar las transacciones de la cuenta');
+            }
+        });
     }
 
     openTransactionModal() {
-        this.newTransaction = {
-            id: 0,
-            date: '',
-            typeMovement: '',
-            value: 0,
-            sald: 0,
-            accountNumberAccount: ''
-        };
         this.showTransactionModal = true;
     }
 
@@ -56,9 +60,46 @@ export default class TransactionPageComponent {
     }
 
     saveTransaction() {
-        this.newTransaction.id = this.transactions.length + 1;
-        this.transactions.push({ ...this.newTransaction });
-        this.applySearch();
-        this.closeTransactionModal();
+        if (this.transactionForm.invalid) {
+            this.alertService.error('Por favor, complete todos los campos requeridos.');
+            this.validateAllFormFields(this.transactionForm);
+            return;
+        }
+
+        const transactionData = {
+            ...this.transactionForm.value,
+            typeMovement: parseInt(this.transactionForm.value.typeMovement, 10),
+        }
+
+        this.transactionService.postCreateAccount(transactionData).subscribe({
+            next: (response) => {
+                this.alertService.success('Transacción creada exitosamente');
+                this.closeTransactionModal();
+                this.searchText = transactionData.accountNumberAccount;
+                this.applySearch();
+            },
+            error: (error) => {
+                this.alertService.error(error.message || 'Error al crear la transacción');
+            }
+        });
+    }
+
+    private getToday(): string {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = ('0' + (today.getMonth() + 1)).slice(-2);
+        const day = ('0' + today.getDate()).slice(-2);
+        return `${year}-${month}-${day}`;
+    }
+
+    private validateAllFormFields(formGroup: FormGroup) {
+        Object.keys(formGroup.controls).forEach(field => {
+            const control = formGroup.get(field);
+            if (control instanceof FormGroup) {
+                this.validateAllFormFields(control);
+            } else {
+                control?.markAsTouched({ onlySelf: true });
+            }
+        });
     }
 }
